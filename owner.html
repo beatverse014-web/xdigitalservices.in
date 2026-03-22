@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owner Dashboard | X DIGITAL SERVICES</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Inter',sans-serif; background:#f1f5f9; padding:2rem; }
+    .dashboard-container { max-width:1400px; margin:0 auto; }
+    h1 { font-size:2rem; margin-bottom:0.5rem; color:#0f2b3d; }
+    .header { display:flex; justify-content:space-between; flex-wrap:wrap; margin-bottom:2rem; }
+    .tabs { display:flex; gap:0.5rem; margin-bottom:2rem; border-bottom:2px solid #8fffe4; flex-wrap:wrap; }
+    .tab-btn { background:transparent; border:none; padding:0.8rem 1.5rem; cursor:pointer; font-weight:600; border-radius:2rem 2rem 0 0; }
+    .tab-btn.active { background:#8fffe4; color:#1f2937; border-bottom:2px solid #ff8fea; }
+    .tab-pane { display:none; animation:fadeIn 0.3s; }
+    .tab-pane.active { display:block; }
+    @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+    .card-grid { display:flex; flex-direction:column; gap:1rem; }
+    .entry-card { background:white; border-radius:1rem; padding:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.05); border-left:4px solid #acff8f; }
+    .entry-header { display:flex; justify-content:space-between; flex-wrap:wrap; margin-bottom:0.5rem; font-weight:600; color:#1e5a7a; }
+    .badge { background:#fffe87; padding:0.2rem 0.6rem; border-radius:2rem; font-size:0.7rem; }
+    .empty-message { text-align:center; padding:2rem; color:#6b7280; }
+    .btn-icon { background:#1e5a7a; border:none; padding:0.4rem 0.8rem; border-radius:2rem; color:white; cursor:pointer; margin-left:0.5rem; }
+    .btn-danger { background:#b91c1c; }
+    .btn-success { background:#10b981; }
+    .testimonial-controls { display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem; }
+    .testimonial-form { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem; background:#f9fafb; padding:1rem; border-radius:1rem; }
+    .testimonial-form input { flex:1; padding:0.5rem; border-radius:0.5rem; border:1px solid #ccc; }
+    footer { text-align:center; margin-top:2rem; font-size:0.8rem; color:#475569; }
+  </style>
+</head>
+<body>
+<div class="dashboard-container">
+  <div class="header"><div><h1><i class="fas fa-chalkboard-user"></i> Owner Dashboard</h1><p>Manage testimonials, view all submissions</p></div><div><button id="refreshBtn" class="btn-icon"><i class="fas fa-sync-alt"></i> Refresh</button><button id="clearAllBtn" class="btn-icon btn-danger"><i class="fas fa-trash-alt"></i> Clear All Data</button></div></div>
+  <div class="tabs"><button class="tab-btn active" data-tab="contacts">📞 Contacts</button><button class="tab-btn" data-tab="feedbacks">⭐ Feedbacks</button><button class="tab-btn" data-tab="issues">⚠️ Issues</button><button class="tab-btn" data-tab="testimonials">🌟 Testimonials</button></div>
+  <div id="contactsTab" class="tab-pane active"><div id="contactsList" class="card-grid"></div></div>
+  <div id="feedbacksTab" class="tab-pane"><div id="feedbacksList" class="card-grid"></div></div>
+  <div id="issuesTab" class="tab-pane"><div id="issuesList" class="card-grid"></div></div>
+  <div id="testimonialsTab" class="tab-pane"><div id="testimonialsList" class="card-grid"></div></div>
+  <footer>Data is stored locally. Customer website updates automatically.</footer>
+</div>
+<script>
+  // Storage keys
+  const CONTACTS_KEY = 'xdigital_contacts';
+  const FEEDBACKS_KEY = 'xdigital_feedbacks';
+  const ISSUES_KEY = 'xdigital_issues';
+  const TESTIMONIALS_KEY = 'xdigital_testimonials';
+
+  function loadData() {
+    loadContacts();
+    loadFeedbacks();
+    loadIssues();
+    loadTestimonials();
+  }
+
+  function loadContacts() {
+    const data = JSON.parse(localStorage.getItem(CONTACTS_KEY) || '[]');
+    const container = document.getElementById('contactsList');
+    if (!data.length) { container.innerHTML = '<div class="empty-message">No contacts yet.</div>'; return; }
+    container.innerHTML = data.map(c => `<div class="entry-card"><div class="entry-header"><span>${escapeHtml(c.name)}</span><span class="badge">${c.date}</span></div><div>📞 ${escapeHtml(c.phone)}</div><div>✉️ ${escapeHtml(c.email)}</div><div>📋 Plan: ${escapeHtml(c.plan || 'None')}</div><div>💬 ${escapeHtml(c.message)}</div></div>`).join('');
+  }
+  function loadFeedbacks() {
+    const data = JSON.parse(localStorage.getItem(FEEDBACKS_KEY) || '[]');
+    const container = document.getElementById('feedbacksList');
+    if (!data.length) { container.innerHTML = '<div class="empty-message">No feedback yet.</div>'; return; }
+    container.innerHTML = data.map(f => `<div class="entry-card"><div class="entry-header"><span>${escapeHtml(f.name)}</span><span class="badge">⭐ ${f.rating}/5</span><span class="badge">${f.date}</span></div><div>✉️ ${escapeHtml(f.email)}</div><div>💬 ${escapeHtml(f.reason)}</div></div>`).join('');
+  }
+  function loadIssues() {
+    const data = JSON.parse(localStorage.getItem(ISSUES_KEY) || '[]');
+    const container = document.getElementById('issuesList');
+    if (!data.length) { container.innerHTML = '<div class="empty-message">No issues reported.</div>'; return; }
+    container.innerHTML = data.map(i => `<div class="entry-card"><div class="entry-header"><span>${escapeHtml(i.name)}</span><span class="badge">${i.date}</span></div><div>⚠️ ${escapeHtml(i.description)}</div></div>`).join('');
+  }
+  function loadTestimonials() {
+    const data = JSON.parse(localStorage.getItem(TESTIMONIALS_KEY) || '[]');
+    const container = document.getElementById('testimonialsList');
+    if (!data.length) {
+      container.innerHTML = '<div class="empty-message">No testimonials. Use the "+" button to add.</div>';
+      return;
+    }
+    container.innerHTML = data.map((t, idx) => `
+      <div class="entry-card">
+        <div class="entry-header">
+          <span><strong>${escapeHtml(t.name)}</strong></span>
+          <div>
+            <button class="btn-icon btn-success" onclick="editTestimonial(${idx})"><i class="fas fa-edit"></i></button>
+            <button class="btn-icon btn-danger" onclick="deleteTestimonial(${idx})"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+        <div>${escapeHtml(t.text)}</div>
+        ${t.image ? `<div><img src="${escapeHtml(t.image)}" style="max-width:100px; border-radius:0.5rem;"></div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function addTestimonial() {
+    const name = prompt("Enter client name:");
+    if (!name) return;
+    const text = prompt("Enter testimonial text:");
+    if (!text) return;
+    const image = prompt("Enter image URL (optional, leave blank for default):");
+    let testimonials = JSON.parse(localStorage.getItem(TESTIMONIALS_KEY) || '[]');
+    testimonials.push({ name, text, image: image || "https://randomuser.me/api/portraits/lego/1.jpg" });
+    localStorage.setItem(TESTIMONIALS_KEY, JSON.stringify(testimonials));
+    loadTestimonials();
+  }
+
+  window.deleteTestimonial = function(idx) {
+    let testimonials = JSON.parse(localStorage.getItem(TESTIMONIALS_KEY) || '[]');
+    testimonials.splice(idx, 1);
+    localStorage.setItem(TESTIMONIALS_KEY, JSON.stringify(testimonials));
+    loadTestimonials();
+  };
+  window.editTestimonial = function(idx) {
+    let testimonials = JSON.parse(localStorage.getItem(TESTIMONIALS_KEY) || '[]');
+    const t = testimonials[idx];
+    const newName = prompt("Edit name:", t.name);
+    if (newName !== null) t.name = newName;
+    const newText = prompt("Edit testimonial text:", t.text);
+    if (newText !== null) t.text = newText;
+    const newImage = prompt("Edit image URL:", t.image);
+    if (newImage !== null) t.image = newImage;
+    localStorage.setItem(TESTIMONIALS_KEY, JSON.stringify(testimonials));
+    loadTestimonials();
+  };
+
+  function clearAll() {
+    if (confirm("Delete ALL data? This cannot be undone.")) {
+      localStorage.removeItem(CONTACTS_KEY);
+      localStorage.removeItem(FEEDBACKS_KEY);
+      localStorage.removeItem(ISSUES_KEY);
+      localStorage.removeItem(TESTIMONIALS_KEY);
+      loadData();
+    }
+  }
+
+  function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m) { if (m==='&') return '&amp;'; if (m==='<') return '&lt;'; if (m==='>') return '&gt;'; return m; }); }
+
+  // Tabs
+  const tabs = document.querySelectorAll('.tab-btn');
+  const panes = { contacts: document.getElementById('contactsTab'), feedbacks: document.getElementById('feedbacksTab'), issues: document.getElementById('issuesTab'), testimonials: document.getElementById('testimonialsTab') };
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.getAttribute('data-tab');
+      tabs.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      Object.keys(panes).forEach(p => panes[p].classList.remove('active'));
+      panes[tab].classList.add('active');
+    });
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', loadData);
+  document.getElementById('clearAllBtn').addEventListener('click', clearAll);
+  // Add button for testimonials
+  const testimonialPane = document.getElementById('testimonialsTab');
+  const addButton = document.createElement('button');
+  addButton.innerHTML = '<i class="fas fa-plus"></i> Add Testimonial';
+  addButton.className = 'btn-icon btn-success';
+  addButton.style.marginBottom = '1rem';
+  addButton.onclick = addTestimonial;
+  testimonialPane.insertBefore(addButton, testimonialPane.firstChild);
+
+  loadData();
+</script>
+</body>
+</html>
